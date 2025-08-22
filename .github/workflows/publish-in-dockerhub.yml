@@ -28,7 +28,10 @@ jobs:
           distribution: 'temurin'
 
       - name: Build with Gradle
-        run: ./gradlew -p eventuate-cdc-service build
+        run: |
+          echo "repositories { mavenCentral(); maven { url 'https://plugins.gradle.org/m2/' } }" > build.gradle
+          ./gradlew :eventuate-cdc-service:build -x test --no-daemon
+          ls -la eventuate-cdc-service/build/libs/
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
