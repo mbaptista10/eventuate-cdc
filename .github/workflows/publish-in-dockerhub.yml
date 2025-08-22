@@ -29,8 +29,34 @@ jobs:
 
       - name: Build with Gradle
         run: |
-          echo "repositories { mavenCentral(); maven { url 'https://plugins.gradle.org/m2/' } }" > build.gradle
-          ./gradlew :eventuate-cdc-service:build -x test --no-daemon
+          # Configurar o wrapper do Gradle para uma versão compatível
+          echo "distributionUrl=https\\://services.gradle.org/distributions/gradle-5.6.4-bin.zip" > gradle/wrapper/gradle-wrapper.properties
+          
+          # Adicionar repositórios necessários
+          cat > build.gradle << 'EOL'
+          buildscript {
+            repositories {
+              mavenCentral()
+              maven { url "https://plugins.gradle.org/m2/" }
+              maven { url "https://dl.bintray.com/eventuateio-oss/eventuate-maven-release" }
+              maven { url "https://snapshots.repositories.eventuate.io/repository" }
+            }
+          }
+          
+          allprojects {
+            repositories {
+              mavenCentral()
+              maven { url "https://plugins.gradle.org/m2/" }
+              maven { url "https://dl.bintray.com/eventuateio-oss/eventuate-maven-release" }
+              maven { url "https://snapshots.repositories.eventuate.io/repository" }
+            }
+          }
+          EOL
+          
+          # Build apenas o módulo do serviço
+          ./gradlew :eventuate-cdc-service:assemble --no-daemon
+          
+          # Verificar os arquivos gerados
           ls -la eventuate-cdc-service/build/libs/
 
       - name: Log in to Docker Hub
