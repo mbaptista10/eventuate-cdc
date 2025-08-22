@@ -26,38 +26,31 @@ jobs:
         with:
           java-version: '8'
           distribution: 'temurin'
+          cache: gradle
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Setup Docker Compose
+        run: |
+          docker-compose version
+          docker version
+          DOCKER_COMPOSE_VERSION="1.25.4"
+          sudo curl -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          docker-compose version
 
       - name: Build with Gradle
         run: |
-          # Configurar o wrapper do Gradle para uma versão compatível
-          echo "distributionUrl=https\\://services.gradle.org/distributions/gradle-5.6.4-bin.zip" > gradle/wrapper/gradle-wrapper.properties
-          
-          # Adicionar repositórios necessários
-          cat > build.gradle << 'EOL'
-          buildscript {
-            repositories {
-              mavenCentral()
-              maven { url "https://plugins.gradle.org/m2/" }
-              maven { url "https://dl.bintray.com/eventuateio-oss/eventuate-maven-release" }
-              maven { url "https://snapshots.repositories.eventuate.io/repository" }
-            }
-          }
-          
-          allprojects {
-            repositories {
-              mavenCentral()
-              maven { url "https://plugins.gradle.org/m2/" }
-              maven { url "https://dl.bintray.com/eventuateio-oss/eventuate-maven-release" }
-              maven { url "https://snapshots.repositories.eventuate.io/repository" }
-            }
-          }
-          EOL
-          
-          # Build apenas o módulo do serviço
-          ./gradlew :eventuate-cdc-service:assemble --no-daemon
-          
-          # Verificar os arquivos gerados
-          ls -la eventuate-cdc-service/build/libs/
+          ./gradlew testClasses aggregateJavaDocs
+          ./gradlew :eventuate-cdc-service:assemble
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
