@@ -9,6 +9,7 @@ import io.micrometer.core.instrument.Timer;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.io.PrintStream;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -97,10 +98,13 @@ public class TopicPartitionSender {
         .whenComplete((o, throwable) -> {
           updateMetrics(1);
           if (throwable != null) {
+            System.out.println("Error in sendSingleMessage: " + throwable.getMessage());
+            throwable.printStackTrace(System.out);
             state.set(TopicPartitionSenderState.ERROR);
             message.completeExceptionally(throwable);
           }
           else {
+            System.out.println("Message successfully produced in sendSingleMessage for topic: " + message.getTopic());
             message.complete(o);
             sendMessage();
           }
@@ -151,10 +155,13 @@ public class TopicPartitionSender {
               sendDurationTimer.record(endTime - startTime, TimeUnit.MILLISECONDS);
               updateMetrics(batch.size());
               if (throwable != null) {
+                System.out.println("Error in sendMessageBatch: " + throwable.getMessage());
+                throwable.printStackTrace(System.out);
                 state.set(TopicPartitionSenderState.ERROR);
                 batch.forEach(m -> m.completeExceptionally(throwable));
               }
               else {
+                System.out.println("Batch of " + batch.size() + " messages successfully produced in sendMessageBatch for topic: " + topic);
                 batch.forEach(m -> m.complete(o));
                 sendMessage();
               }
